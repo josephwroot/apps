@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clef Climb</title>
+<meta name="description" content="A note-reading game. Name the note on the staff by playing it on a piano, treble clef first and then bass.">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Clef Climb">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ECEFF5">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0C111D">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px system-ui,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+@font-face{font-family:"Bodoni Moda";font-style:normal;font-weight:600;font-display:swap;src:url(./fonts/bodoni-moda-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Bodoni Moda";font-style:italic;font-weight:600;font-display:swap;src:url(./fonts/bodoni-moda-latin-600-italic.woff2) format("woff2")}
+@font-face{font-family:"Bodoni Moda";font-style:italic;font-weight:800;font-display:swap;src:url(./fonts/bodoni-moda-latin-800-italic.woff2) format("woff2")}
+@font-face{font-family:"Instrument Sans";font-style:normal;font-weight:400;font-display:swap;src:url(./fonts/instrument-sans-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Instrument Sans";font-style:normal;font-weight:500;font-display:swap;src:url(./fonts/instrument-sans-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Instrument Sans";font-style:normal;font-weight:600;font-display:swap;src:url(./fonts/instrument-sans-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Instrument Sans";font-style:normal;font-weight:700;font-display:swap;src:url(./fonts/instrument-sans-latin-700-normal.woff2) format("woff2")}
+</style>
+<style>
+/* Layout: one centered column. A level rail, one sheet card holding the staff, and a row of seven letter keys beneath it. */
+:root{
+  --bg:#ECEFF5; --surface:#FFFFFF; --ink:#131A2A; --muted:#566178; --line:#CDD4E0; --sunk:#E2E7F0;
+  --brass:#E3A81F; --brass-ink:#33230A; --brass-text:#8F6200;
+  --good:#18794E; --good-bg:#DDF3E7; --bad:#B93434; --bad-bg:#FBE2E2; --focus:#2B59D9;
+  --ivory:#FFFFFF; --ivory-hover:#F1F4F9; --ivory-edge:#B9C2D1; --ivory-ink:#566178; --ebony:#131A2A;
+  --key-good:#B7E8CD; --key-bad:#F7C1C1; --key-dot:#C08400;
+  --display:"Bodoni Moda","Bodoni 72","Didot",Georgia,serif;
+  --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C111D; --surface:#151C2D; --ink:#EDF0F7; --muted:#9AA5BD; --line:#2A344E; --sunk:#1E2740;
+    --brass:#F0B93A; --brass-ink:#2B1D00; --brass-text:#F0B93A;
+    --good:#55C992; --good-bg:#12362A; --bad:#F28585; --bad-bg:#3F1B1F; --focus:#8FB0FF;
+    --ivory:#E3E7EF; --ivory-hover:#F4F6FA; --ivory-edge:#8D97AD; --ivory-ink:#3A4560; --ebony:#070A12;
+    --key-good:#7FD9AB; --key-bad:#F29A9A; --key-dot:#C08400;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C111D; --surface:#151C2D; --ink:#EDF0F7; --muted:#9AA5BD; --line:#2A344E; --sunk:#1E2740;
+  --brass:#F0B93A; --brass-ink:#2B1D00; --brass-text:#F0B93A;
+  --good:#55C992; --good-bg:#12362A; --bad:#F28585; --bad-bg:#3F1B1F; --focus:#8FB0FF;
+    --ivory:#E3E7EF; --ivory-hover:#F4F6FA; --ivory-edge:#8D97AD; --ivory-ink:#3A4560; --ebony:#070A12;
+    --key-good:#7FD9AB; --key-bad:#F29A9A; --key-dot:#C08400;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+button{font:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.app{max-width:860px;margin-inline:auto;padding-inline:20px;padding-block:20px 36px;display:flex;flex-direction:column;gap:18px}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.top h1{font-family:var(--display);font-style:italic;font-weight:600;font-size:32px;line-height:1;margin:0;letter-spacing:-.01em}
+.toggles{display:flex;gap:8px}
+.tog{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+.tog::before{content:"";width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor}
+.tog[aria-pressed="true"]{background:var(--surface);color:var(--ink)}
+.tog[aria-pressed="true"]::before{background:currentColor}
+
+.rail{display:grid;grid-template-columns:4fr 4fr 1.25fr;gap:16px}
+.group{min-width:0;display:flex;flex-direction:column;gap:6px}
+.group h2,.hud .k,.stats dt{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}
+.group ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:6px}
+.lvl{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;text-align:left}
+.lvl .nm{font-weight:600;font-size:14px}
+.lvl .st{font-size:12px;letter-spacing:.08em;color:var(--brass-text)}
+.lvl:hover:not(:disabled){border-color:var(--ink)}
+.lvl[aria-current="true"]{background:var(--brass);border-color:var(--brass);color:var(--brass-ink)}
+.lvl[aria-current="true"] .st{color:var(--brass-ink)}
+.lvl:disabled{background:transparent;border-style:dashed;color:var(--muted);cursor:not-allowed}
+.lvl:disabled .st{color:var(--muted);letter-spacing:0}
+
+.stage{display:flex;flex-direction:column;gap:14px;min-width:0}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.hud{display:grid;grid-template-columns:1.5fr 1fr 1.3fr .8fr;gap:10px 16px;padding:12px 18px;border-bottom:1px solid var(--line)}
+.hud > div{min-width:0}
+.hud .k{display:block}
+.hud .v{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.dyn{font-family:var(--display);font-style:italic;font-weight:800;font-size:21px;line-height:1;color:var(--brass-text);margin-left:8px}
+.mult{font-size:13px;font-weight:600;color:var(--muted)}
+#staff{display:block;width:100%;max-width:640px;height:auto;margin-inline:auto}
+#staff .lines line{stroke:var(--ink);stroke-width:1.3}
+#staff .clef{fill:var(--ink)}
+.note{color:var(--ink)}
+.note.good{color:var(--good)}
+.note.bad{color:var(--bad)}
+.note .ledger{stroke:var(--ink);stroke-width:1.6}
+.note .stem{stroke:currentColor;stroke-width:2.2}
+.note .head{fill:currentColor}
+.note text{fill:currentColor;font-family:var(--display);font-weight:600;font-size:26px}
+@keyframes slide{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+.note.enter{animation:slide .2s ease-out}
+.bonus{height:5px;background:var(--sunk)}
+.bonus i{display:block;height:100%;background:var(--brass);transform-origin:left center}
+
+.fb{min-height:1.5em;margin:0;font-weight:600;text-align:center;text-wrap:balance}
+.fb.good{color:var(--good)}
+.fb.bad{color:var(--bad)}
+.hint{margin:0;color:var(--muted);text-align:center;font-size:14px;text-wrap:balance}
+
+.piano{position:relative;display:flex;width:100%;max-width:calc(var(--n,15) * 46px);height:160px;margin-inline:auto;border-top:6px solid var(--ebony);border-radius:4px 4px 8px 8px;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.wk{flex:1 1 0;min-width:0;height:100%;margin-left:-1px;padding:0 0 9px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;background:var(--ivory);color:var(--ivory-ink);border:1px solid var(--ivory-edge);border-top:0;border-radius:0 0 6px 6px;font-size:12px;font-weight:600;line-height:1;cursor:pointer}
+.wk:first-child{margin-left:0}
+.wk:hover{background:var(--ivory-hover)}
+.wk:focus-visible{outline-offset:-3px}
+.wk .dot{width:7px;height:7px;border-radius:50%;background:var(--key-dot)}
+.wk.right{background:var(--key-good)}
+.wk.wrong{background:var(--key-bad)}
+.bk{position:absolute;top:0;z-index:1;height:60%;width:calc(62% / var(--n,15));transform:translateX(-50%);padding:0;border:0;border-radius:0 0 4px 4px;background:var(--ebony);cursor:default}
+.piano.plain .kn{visibility:hidden}
+
+.results{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding-block:4px}
+.results .stars{font-size:40px;line-height:1;letter-spacing:.12em;color:var(--brass-text)}
+.results h2{font-family:var(--display);font-style:italic;font-weight:600;font-size:28px;line-height:1.1;margin:0;text-wrap:balance}
+.results p{margin:0;color:var(--muted);max-width:52ch}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 28px;margin:4px 0}
+.stats div{min-width:0}
+.stats dd{margin:0;font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.stats small{display:block;font-size:13px;font-weight:500;color:var(--muted)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+.btn{font-weight:600;padding:11px 22px;border-radius:999px;border:1px solid var(--ink);background:var(--ink);color:var(--surface);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--ink)}
+
+.res-a,.res-b{display:contents}
+.turn{display:none;margin:0;color:var(--muted);font-size:13px;text-align:center}
+
+.foot{display:flex;flex-direction:column;gap:10px;color:var(--muted);font-size:13.5px;border-top:1px solid var(--line);padding-top:16px}
+.foot p{margin:0;max-width:72ch}
+.foot .dy{font-family:var(--display);font-style:italic;font-weight:800;color:var(--ink);font-size:15px}
+.links{display:flex;gap:18px;flex-wrap:wrap}
+.link{padding:0;border:0;background:none;color:var(--ink);font-weight:600;font-size:13.5px;text-decoration:underline;text-decoration-color:var(--brass);text-decoration-thickness:2px;text-underline-offset:3px;cursor:pointer}
+
+@media (max-width:640px){
+  .app{padding-inline:16px;gap:16px}
+  .rail{grid-template-columns:1fr;order:3}
+  .foot{order:4}
+  .hud{grid-template-columns:1fr 1fr;padding:10px 14px}
+  .stats{grid-template-columns:1fr;gap:10px}
+}
+@media (max-width:480px){
+  .wk{font-size:11px;padding-bottom:7px;gap:4px}
+  .wk .dot{width:6px;height:6px}
+  .top h1{font-size:28px}
+}
+@media (max-width:640px) and (orientation:portrait){
+  .piano{height:190px}
+  .piano:not([hidden]) + .turn{display:block}
+}
+/* Phone held sideways: the game fills the screen. Staff and readout share the top row, the piano runs the full width beneath. */
+@media (orientation:landscape) and (max-height:500px){
+  .app{max-width:none;gap:14px;padding-block:6px 20px;padding-inline:max(14px,env(safe-area-inset-left,0px)) max(14px,env(safe-area-inset-right,0px))}
+  .stage{order:-1;--sh:clamp(112px,38vh,160px);display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto 1fr auto auto;column-gap:16px;row-gap:5px;
+    grid-template-areas:"staff hud" "staff fb" "staff hint" "bonus bonus" "piano piano"}
+  .rail{order:0;grid-template-columns:4fr 4fr 1.25fr}
+  .sheet{display:contents}
+  #staff{grid-area:staff;width:calc(var(--sh) * 2.4);height:var(--sh);max-width:none;margin:0;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+  .hud{grid-area:hud;display:flex;flex-wrap:wrap;align-items:baseline;gap:0 18px;padding:2px 0 0;border:0}
+  .hud > div{display:flex;align-items:baseline;gap:6px}
+  .hud .k{font-size:10px}
+  .hud .v{font-size:15px}
+  .hud .solo .k{display:none}
+  .dyn{font-size:18px;margin-left:0}
+  .fb{grid-area:fb;text-align:left;font-size:14px;min-height:1.45em}
+  .hint{grid-area:hint;align-self:start;text-align:left;font-size:12.5px}
+  .bonus{grid-area:bonus;border-radius:3px;overflow:hidden}
+  .piano{grid-area:piano;max-width:none;height:clamp(120px,calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - var(--sh) - 46px),190px)}
+  .wk{font-size:13px;padding-bottom:9px}
+  .results{grid-area:piano;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);align-items:center;gap:8px 24px;padding-block:6px;text-align:left}
+  .res-a,.res-b{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
+  .results .stars{font-size:30px}
+  .results h2{font-size:23px}
+  .stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 20px;margin:0}
+  .stats dd{font-size:16px}
+  .actions{justify-content:flex-start;margin-top:2px}
+  .btn{padding:9px 18px}
+}
+@media (prefers-reduced-motion:reduce){
+  .note.enter{animation:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1>Clef Climb</h1>
+    <div class="toggles">
+      <button class="tog" type="button" id="hintToggle" aria-pressed="true">Hints</button>
+      <button class="tog" type="button" id="namesToggle" aria-pressed="true">Key names</button>
+      <button class="tog" type="button" id="soundToggle" aria-pressed="true">Sound</button>
+    </div>
+  </header>
+
+  <nav class="rail" id="rail" aria-label="Levels"></nav>
+
+  <main class="stage">
+    <div class="sheet">
+      <div class="hud">
+        <div class="solo"><span class="k">Level</span><span class="v" id="levelName">Treble · Spaces</span></div>
+        <div><span class="k">Score</span><span class="v" id="score">0</span></div>
+        <div><span class="k">Streak</span><span class="v" id="streak">0</span><span class="dyn" id="dyn" title="Your multiplier, written as a dynamic marking">p</span> <span class="mult" id="mult">×1</span></div>
+        <div class="solo"><span class="k">Note</span><span class="v" id="count">1 / 20</span></div>
+      </div>
+      <svg id="staff" viewBox="0 0 480 200" role="img" aria-label="A note on the treble staff">
+        <g class="lines">
+          <line x1="12" x2="468" y1="60" y2="60"/><line x1="12" x2="468" y1="80" y2="80"/><line x1="12" x2="468" y1="100" y2="100"/><line x1="12" x2="468" y1="120" y2="120"/><line x1="12" x2="468" y1="140" y2="140"/>
+        </g>
+        <path class="clef" id="clef" transform="translate(22 140) scale(.08 -.08)" d=""/>
+        <g class="note" id="note"></g>
+      </svg>
+      <div class="bonus" aria-hidden="true"><i id="bonusFill"></i></div>
+    </div>
+
+    <p class="fb" id="feedback" aria-live="polite">Find the note on the piano to start. The dot marks middle C.</p>
+    <p class="hint" id="hint"></p>
+    <div class="piano" id="piano" role="group" aria-label="Piano keys"></div>
+    <p class="turn">Turn your phone sideways for bigger keys.</p>
+    <section class="results" id="results" aria-live="polite" hidden></section>
+  </main>
+
+  <footer class="foot">
+    <p>Answer by playing the note on the piano, in the right octave. The dot marks middle C, and every answer is a white key.</p>
+    <p>A round is 20 notes. Each is worth 100 points, plus up to 50 for speed, times your streak multiplier. The multiplier climbs through the dynamics: <span class="dy">p</span> ×1, <span class="dy">mp</span> ×2 at three in a row, <span class="dy">mf</span> ×3 at six, <span class="dy">f</span> ×4 at ten, <span class="dy">ff</span> ×5 at fifteen.</p>
+    <p>16 of 20 earns one star and opens the next level. 18 earns two. Three stars takes 19 or more at under 3 seconds a note.</p>
+    <div class="links">
+      <button class="link" type="button" id="unlockAll">Unlock every level</button>
+      <button class="link" type="button" id="reset">Reset progress</button>
+    </div>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const CLEF = { treble: "M314 801Q300 854 291 906Q282 958 282 1012Q282 1059 288 1100Q295 1142 307 1177Q320 1217 341 1252Q362 1288 386 1311Q409 1334 427 1334Q451 1334 493 1249Q514 1206 524 1156Q534 1106 534 1049Q534 978 515 908Q496 837 460 775Q423 713 372 666L407 498Q422 500 432 501Q442 502 447 502Q508 502 556 468Q604 433 632 377Q661 321 661 254Q661 177 622 116Q582 54 503 25Q508 8 532 -117Q538 -147 541 -164Q544 -182 545 -195Q546 -208 546 -225Q546 -275 522 -314Q497 -354 456 -376Q414 -398 363 -398Q311 -398 271 -378Q231 -359 208 -324Q185 -290 185 -245Q185 -197 212 -165Q238 -133 287 -133Q329 -133 356 -164Q382 -194 382 -236Q382 -272 357 -299Q332 -326 292 -326H282Q308 -365 364 -365Q433 -365 472 -320Q511 -275 511 -205Q511 -188 507 -160Q503 -131 493 -91Q483 -51 478 -25Q472 1 470 12Q436 2 390 2Q304 2 222 52Q142 102 96 184Q50 266 50 361Q50 451 91 530Q132 609 192 675Q253 741 314 801ZM341 826Q364 838 390 870Q416 903 440 945Q464 987 479 1030Q494 1072 494 1106Q494 1142 483 1163Q472 1184 445 1184Q421 1184 398 1162Q376 1140 358 1104Q341 1067 331 1022Q321 977 321 930Q321 898 328 872Q334 846 341 826ZM398 379Q371 373 347 354Q323 334 308 306Q294 279 294 248Q294 223 307 196Q320 170 339 154Q352 142 365 136Q380 129 380 123Q380 120 370 117Q332 126 302 151Q271 176 254 212Q236 247 236 287Q236 330 254 370Q271 410 302 442Q334 474 374 490L345 641Q229 547 174 456Q120 366 120 277Q120 212 154 156Q188 100 247 66Q306 31 380 31Q400 31 420 35Q441 39 464 45ZM495 55Q593 97 593 227Q593 270 571 306Q549 341 512 362Q475 383 429 383Z", bass: "M50 123Q216 231 288 301Q336 348 373 408Q410 469 432 536Q453 603 453 669Q453 728 435 774Q417 819 383 845Q349 871 302 871Q284 871 264 867Q245 863 224 855Q181 839 158 814Q135 788 135 765Q135 756 143 752Q151 748 158 748Q168 748 183 752Q190 754 196 755Q203 756 210 756Q248 756 272 734Q296 711 296 674Q296 638 266 612Q236 586 195 586Q146 586 111 617Q76 648 76 697Q76 756 109 802Q142 848 198 874Q255 900 324 900Q400 900 460 867Q520 834 556 776Q591 719 591 646Q591 551 538 464Q511 419 476 379Q442 339 389 298Q336 256 256 208Q176 160 57 101ZM687 809Q710 809 726 793Q742 777 742 754Q742 731 726 716Q710 700 687 700Q664 700 648 716Q632 731 632 754Q632 777 648 793Q664 809 687 809ZM687 589Q710 589 726 573Q742 557 742 534Q742 511 726 496Q710 480 687 480Q664 480 648 496Q632 511 632 534Q632 557 648 573Q664 589 687 589Z" };
+  const LETTERS = ['C','D','E','F','G','A','B'], SEMIS = [0,2,4,5,7,9,11];
+  // A step is the number of staff positions above middle C. BOTTOM is the step of each staff's bottom line.
+  const BOTTOM = { treble: 2, bass: -10 };
+  const ROUND = 20, BONUS_MS = 5000, NX = 286;
+  const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  const pool = (clef, steps, focus) => steps.map(step => ({ clef, step, w: focus ? (focus(step) ? 2 : 0.6) : 1 }));
+
+  const LEVELS = [
+    { id:'t1', keys:[0,14], clef:'treble', name:'Spaces', items: pool('treble', [3,5,7,9]),
+      hint:'The four spaces, bottom to top, spell F A C E.' },
+    { id:'t2', keys:[0,14], clef:'treble', name:'Lines', items: pool('treble', [2,4,6,8,10]),
+      hint:'The five lines, bottom to top, are E G B D F. Every Good Boy Does Fine.' },
+    { id:'t3', keys:[0,14], clef:'treble', name:'Staff', items: pool('treble', range(1,11)),
+      hint:'Lines and spaces together, plus D hanging under the staff and G sitting on top.' },
+    { id:'t4', keys:[-2,14], clef:'treble', name:'Ledger', items: pool('treble', range(-2,14), s => s <= 1 || s >= 11),
+      hint:'Ledger lines continue the staff. Middle C is on the first one below. A is on the first one above.' },
+    { id:'b1', keys:[-14,0], clef:'bass', name:'Spaces', items: pool('bass', [-9,-7,-5,-3]),
+      hint:'The four spaces, bottom to top, are A C E G. All Cows Eat Grass.' },
+    { id:'b2', keys:[-14,0], clef:'bass', name:'Lines', items: pool('bass', [-10,-8,-6,-4,-2]),
+      hint:'The five lines, bottom to top, are G B D F A. Good Boys Do Fine Always.' },
+    { id:'b3', keys:[-14,0], clef:'bass', name:'Staff', items: pool('bass', range(-11,-1)),
+      hint:'Lines and spaces together, plus F hanging under the staff and B sitting on top.' },
+    { id:'b4', keys:[-14,2], clef:'bass', name:'Ledger', items: pool('bass', range(-14,2), s => s <= -11 || s >= -1),
+      hint:'Middle C is on the first ledger line above the bass staff. E is on the first one below.' },
+    { id:'g1', keys:[-10,10], clef:'both', name:'Mixed', items: pool('treble', range(0,10)).concat(pool('bass', range(-10,0))),
+      hint:'Read the clef first. Middle C is one ledger line below the treble staff and one above the bass staff.' }
+  ];
+  const GROUPS = [['Treble clef',0,4],['Bass clef',4,8],['Both clefs',8,9]];
+
+  const $ = id => document.getElementById(id);
+  const el = { rail:$('rail'), levelName:$('levelName'), score:$('score'), streak:$('streak'), dyn:$('dyn'), mult:$('mult'),
+    count:$('count'), staff:$('staff'), clef:$('clef'), note:$('note'), fill:$('bonusFill'), fb:$('feedback'), hint:$('hint'),
+    piano:$('piano'), results:$('results'), hintT:$('hintToggle'), namesT:$('namesToggle'), soundT:$('soundToggle'), unlockAll:$('unlockAll'), reset:$('reset') };
+
+  /* ---------- saved progress (this browser only) ---------- */
+  const KEY = 'clef-climb-v1';
+  function load(){
+    const d = { stars:{}, best:{}, unlockAll:false, sound:true, hints:true, keyNames:true, last:0 };
+    try { const r = JSON.parse(localStorage.getItem(KEY) || 'null'); if (r && typeof r === 'object') Object.assign(d, r); } catch (e) {}
+    return d;
+  }
+  function persist(){ try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} }
+  let save = load();
+  let li = 0, round = null, raf = 0, timer = 0;
+
+  const unlocked = i => i === 0 || save.unlockAll || (save.stars[LEVELS[i-1].id] || 0) >= 1;
+  const letterOf = step => LETTERS[((step % 7) + 7) % 7];
+  const freqOf = step => 440 * Math.pow(2, (60 + 12 * Math.floor(step / 7) + SEMIS[((step % 7) + 7) % 7] - 69) / 12);
+  const tier = s => s >= 15 ? ['ff',5] : s >= 10 ? ['f',4] : s >= 6 ? ['mf',3] : s >= 3 ? ['mp',2] : ['p',1];
+  const stars = n => '★'.repeat(n) + '☆'.repeat(3 - n);
+  const fmt = n => n.toLocaleString('en-US');
+  const ORD = ['1st','2nd','3rd','4th','5th'];
+  function where(item){
+    const pos = item.step - BOTTOM[item.clef];
+    if (pos >= 0 && pos <= 8) return pos % 2 === 0 ? `on the ${ORD[pos/2]} line` : `in the ${ORD[(pos-1)/2]} space`;
+    if (pos === -1) return 'hanging under the staff';
+    if (pos === 9) return 'sitting on top of the staff';
+    const below = pos < 0, k = below ? Math.floor(-pos / 2) : Math.floor((pos - 8) / 2), even = pos % 2 === 0;
+    return `${even ? 'on' : (below ? 'under' : 'over')} the ${ORD[k-1]} ledger line ${below ? 'below' : 'above'}`;
+  }
+  const clefWord = item => LEVELS[li].clef === 'both' ? ` in ${item.clef} clef` : '';
+
+  /* ---------- sound ---------- */
+  let ac = null;
+  function tone(freq, o = {}){
+    if (!save.sound) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === 'suspended') ac.resume();
+      const dur = o.dur || .6, t = ac.currentTime + (o.delay || 0), osc = ac.createOscillator(), g = ac.createGain();
+      osc.type = o.type || 'triangle'; osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(o.gain || .22, t + .015);
+      g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      osc.connect(g); g.connect(ac.destination); osc.start(t); osc.stop(t + dur + .05);
+    } catch (e) {}
+  }
+
+  /* ---------- drawing ---------- */
+  function drawNote(item, mark, animate){
+    const pos = item.step - BOTTOM[item.clef], y = 140 - pos * 10, up = pos < 4;
+    let s = '';
+    for (let p = -2; p >= pos; p -= 2) s += `<line class="ledger" x1="${NX-23}" x2="${NX+23}" y1="${140-p*10}" y2="${140-p*10}"/>`;
+    for (let p = 10; p <= pos; p += 2) s += `<line class="ledger" x1="${NX-23}" x2="${NX+23}" y1="${140-p*10}" y2="${140-p*10}"/>`;
+    const sx = up ? NX + 11.4 : NX - 11.4;
+    s += `<line class="stem" x1="${sx}" x2="${sx}" y1="${y + (up ? -3 : 3)}" y2="${y + (up ? -66 : 66)}"/>`;
+    s += `<ellipse class="head" cx="${NX}" cy="${y}" rx="12.6" ry="8.7" transform="rotate(-20 ${NX} ${y})"/>`;
+    if (mark) s += `<text x="${NX+38}" y="${y+9}">${letterOf(item.step)}</text>`;
+    el.note.innerHTML = s;
+    el.note.setAttribute('class', 'note' + (mark ? ' ' + mark : ''));
+    if (animate) { void el.note.getBoundingClientRect(); el.note.classList.add('enter'); }
+    el.clef.setAttribute('d', CLEF[item.clef]);
+    el.staff.setAttribute('aria-label', `A note on the ${item.clef} staff`);
+  }
+
+  function renderPiano([lo, hi]){
+    const n = hi - lo + 1; let s = '';
+    for (let st = lo; st <= hi; st++) {
+      const L = letterOf(st), name = st === 0 ? 'Middle C' : L + (4 + Math.floor(st / 7));
+      s += `<button class="wk" type="button" id="wk${st}" data-step="${st}" aria-label="${name}">${st === 0 ? '<span class="dot"></span>' : ''}<span class="kn">${L}</span></button>`;
+    }
+    for (let st = lo; st < hi; st++) if ('CDFGA'.includes(letterOf(st)))
+      s += `<button class="bk" type="button" tabindex="-1" aria-hidden="true" style="left:${((st - lo + 1) / n * 100).toFixed(3)}%"></button>`;
+    el.piano.innerHTML = s; el.piano.style.setProperty('--n', n);
+  }
+
+  function renderRail(){
+    el.rail.innerHTML = GROUPS.map(([g, a, b]) =>
+      `<div class="group" style="--n:${b-a}"><h2>${g}</h2><ol>` + LEVELS.slice(a, b).map((L, k) => {
+        const i = a + k, open = unlocked(i), st = save.stars[L.id] || 0;
+        const label = `Level ${i+1}, ${g}, ${L.name}, ${open ? st + ' of 3 stars' : 'locked'}`;
+        return `<li><button class="lvl" type="button" id="lvl-${L.id}" data-i="${i}" aria-label="${label}"${open ? '' : ' disabled'}${i === li ? ' aria-current="true"' : ''}><span class="nm">${L.name}</span><span class="st">${open ? stars(st) : 'Locked'}</span></button></li>`;
+      }).join('') + '</ol></div>').join('');
+    el.unlockAll.hidden = save.unlockAll || LEVELS.every((_, i) => unlocked(i));
+  }
+
+  function renderHud(){
+    const [d, m] = tier(round.streak);
+    el.score.textContent = fmt(round.score);
+    el.streak.textContent = round.streak;
+    el.dyn.textContent = d; el.mult.textContent = '×' + m;
+    el.count.textContent = `${Math.min(round.n + 1, ROUND)} / ${ROUND}`;
+  }
+  function renderToggles(){
+    el.hintT.setAttribute('aria-pressed', String(!!save.hints));
+    el.soundT.setAttribute('aria-pressed', String(!!save.sound));
+    el.namesT.setAttribute('aria-pressed', String(!!save.keyNames));
+    el.piano.classList.toggle('plain', !save.keyNames);
+    el.hint.hidden = !save.hints || (round && round.done);
+  }
+  function setFb(text, cls){ el.fb.textContent = text; el.fb.className = 'fb' + (cls ? ' ' + cls : ''); }
+
+  /* ---------- round flow ---------- */
+  function startRound(i){
+    cancelAnimationFrame(raf); clearTimeout(timer);
+    li = i; save.last = i; persist();
+    const L = LEVELS[i];
+    round = { n:0, score:0, streak:0, best:0, correct:0, times:[], missed:new Map(), cur:null, last:null, locked:false, done:false, timed:false, t0:0 };
+    el.levelName.textContent = (L.clef === 'both' ? 'Both clefs' : L.clef === 'treble' ? 'Treble' : 'Bass') + ' · ' + L.name;
+    el.hint.textContent = L.hint;
+    el.results.hidden = true; el.results.innerHTML = '';
+    renderPiano(L.keys); el.piano.hidden = false; el.fb.hidden = false;
+    setFb('Find the note on the piano to start. The dot marks middle C.');
+    renderRail(); renderToggles(); nextNote(false);
+  }
+
+  function pick(){
+    const items = LEVELS[li].items.filter(it => it !== round.last || LEVELS[li].items.length === 1);
+    let r = Math.random() * items.reduce((a, it) => a + it.w, 0);
+    for (const it of items) { r -= it.w; if (r <= 0) return it; }
+    return items[items.length - 1];
+  }
+
+  function nextNote(timed){
+    round.cur = pick(); round.last = round.cur; round.locked = false; round.timed = timed;
+    for (const b of el.piano.querySelectorAll('.wk')) b.className = 'wk';
+    drawNote(round.cur, '', timed);
+    if (timed && el.fb.classList.contains('bad')) setFb('');
+    renderHud();
+    cancelAnimationFrame(raf);
+    el.fill.style.transform = 'scaleX(1)';
+    if (timed) {
+      round.t0 = performance.now();
+      const tick = () => {
+        const f = Math.max(0, 1 - (performance.now() - round.t0) / BONUS_MS);
+        el.fill.style.transform = `scaleX(${f})`;
+        if (f > 0) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }
+  }
+
+  function answer(step){
+    if (!round || round.locked || round.done) return;
+    round.locked = true;
+    cancelAnimationFrame(raf);
+    const it = round.cur, right = letterOf(it.step), ok = step === it.step;
+    const ms = round.timed ? performance.now() - round.t0 : null;
+    const want = $('wk' + it.step), hit = $('wk' + step);
+    if (want) want.classList.add('right');
+    if (!ok && hit) hit.classList.add('wrong');
+    if (ok) {
+      round.streak++; round.best = Math.max(round.best, round.streak); round.correct++;
+      if (ms !== null) round.times.push(ms);
+      const bonus = ms === null ? 0 : Math.round(50 * Math.max(0, 1 - ms / BONUS_MS));
+      const pts = (100 + bonus) * tier(round.streak)[1];
+      round.score += pts;
+      it.w = Math.max(0.5, it.w - 0.3);
+      setFb(`${right}. +${fmt(pts)}`, 'good');
+      tone(freqOf(it.step));
+    } else {
+      round.streak = 0; it.w += 2;
+      const key = it.clef + it.step, m = round.missed.get(key) || { it, n:0 };
+      m.n++; round.missed.set(key, m);
+      setFb(letterOf(step) === right ? `Right letter, wrong octave. This ${right}${clefWord(it)} is ${where(it)}.`
+                                     : `That was ${right}${clefWord(it)}, ${where(it)}.`, 'bad');
+      tone(freqOf(step), { dur:.3, gain:.14 });
+      tone(freqOf(it.step), { delay:.34 });
+    }
+    drawNote(it, ok ? 'good' : 'bad', false);
+    round.n++;
+    renderHud();
+    timer = setTimeout(() => round.n >= ROUND ? finish() : nextNote(true), ok ? 450 : 1500);
+  }
+
+  function tempo(ms){
+    return ms < 1200 ? 'Presto' : ms < 2000 ? 'Allegro' : ms < 3000 ? 'Moderato' : ms < 4500 ? 'Andante' : 'Adagio';
+  }
+
+  function finish(){
+    round.done = true;
+    const L = LEVELS[li], next = LEVELS[li + 1];
+    const avg = round.times.length ? round.times.reduce((a, b) => a + b, 0) / round.times.length : null;
+    const n = round.correct >= 19 && avg !== null && avg < 3000 ? 3 : round.correct >= 18 ? 2 : round.correct >= 16 ? 1 : 0;
+    const wasOpen = next ? unlocked(li + 1) : false;
+    const prevBest = save.best[L.id] || 0;
+    save.stars[L.id] = Math.max(save.stars[L.id] || 0, n);
+    save.best[L.id] = Math.max(prevBest, round.score);
+    persist();
+    const nowOpen = next ? unlocked(li + 1) : false;
+
+    let head;
+    if (n === 0) head = 'Not yet';
+    else if (!next) head = 'Both clefs cleared';
+    else if (!wasOpen && next.clef !== L.clef) head = next.clef === 'bass' ? 'Bass clef unlocked' : 'Both clefs unlocked';
+    else if (!wasOpen) head = `${next.name} unlocked`;
+    else head = 'Level cleared';
+    const sub = n === 0 ? `${round.correct} of ${ROUND} right. 16 opens the next level.`
+      : `${round.correct} of ${ROUND} right, with a best streak of ${round.best}.`;
+
+    const missed = [...round.missed.values()].sort((a, b) => b.n - a.n).slice(0, 5)
+      .map(m => `${letterOf(m.it.step)}${clefWord(m.it)} ${where(m.it)}${m.n > 1 ? ' (' + m.n + ' times)' : ''}`);
+    const tempoLine = avg === null ? '<dd>None yet</dd>' : `<dd>${tempo(avg)}<small>${(avg / 1000).toFixed(1)} s a note</small></dd>`;
+
+    el.results.innerHTML =
+      `<div class="res-a"><div class="stars" role="img" aria-label="${n} of 3 stars">${stars(n)}</div>
+       <h2>${head}</h2><p>${sub}</p></div>
+       <div class="res-b"><dl class="stats">
+         <div><dt>Accuracy</dt><dd>${Math.round(100 * round.correct / ROUND)}%</dd></div>
+         <div><dt>Tempo</dt>${tempoLine}</div>
+         <div><dt>Score</dt><dd>${fmt(round.score)}<small>${round.score > prevBest && prevBest > 0 ? 'New best' : 'Best ' + fmt(save.best[L.id])}</small></dd></div>
+       </dl>
+       ${missed.length ? `<p>Missed: ${missed.join('; ')}.</p>` : ''}
+       <div class="actions">
+         ${next && nowOpen ? `<button class="btn" type="button" id="goNext">Next level</button><button class="btn ghost" type="button" id="again">Play again</button>`
+                           : `<button class="btn" type="button" id="again">${n === 0 ? 'Try again' : 'Play again'}</button>`}
+       </div></div>`;
+    el.piano.hidden = true; el.fb.hidden = true; el.hint.hidden = true;
+    el.results.hidden = false;
+    renderRail();
+    const primary = el.results.querySelector('.btn');
+    if (primary) primary.focus({ preventScroll: true });
+    if (n >= 1) [0, .12, .24].slice(0, n).forEach((d, k) => tone([523.25, 659.25, 783.99][k], { delay: d, dur: .5, gain: .16 }));
+  }
+
+  /* ---------- wiring ---------- */
+  el.piano.addEventListener('click', e => {
+    const w = e.target.closest('.wk');
+    if (w) answer(+w.dataset.step);
+    else if (e.target.closest('.bk') && round && !round.locked && !round.done) setFb('No sharps or flats here. Every answer is a white key.');
+  });
+  el.rail.addEventListener('click', e => { const b = e.target.closest('.lvl'); if (b && !b.disabled) startRound(+b.dataset.i); });
+  el.results.addEventListener('click', e => {
+    if (e.target.id === 'goNext') startRound(li + 1);
+    else if (e.target.id === 'again') startRound(li);
+  });
+  el.namesT.addEventListener('click', () => { save.keyNames = !save.keyNames; persist(); renderToggles(); });
+  el.hintT.addEventListener('click', () => { save.hints = !save.hints; persist(); renderToggles(); });
+  el.soundT.addEventListener('click', () => { save.sound = !save.sound; persist(); renderToggles(); if (save.sound) tone(523.25, { dur:.25 }); });
+  el.unlockAll.addEventListener('click', () => { save.unlockAll = true; persist(); renderRail(); });
+  let armed = 0;
+  el.reset.addEventListener('click', () => {
+    if (!armed) {
+      el.reset.textContent = 'Tap again to erase stars and scores';
+      armed = setTimeout(() => { armed = 0; el.reset.textContent = 'Reset progress'; }, 4000);
+      return;
+    }
+    clearTimeout(armed); armed = 0; el.reset.textContent = 'Reset progress';
+    save = Object.assign(load(), { stars:{}, best:{}, unlockAll:false, last:0 }); persist();
+    LEVELS.forEach(L => L.items.forEach(it => { it.w = Math.min(it.w, 2); }));
+    startRound(0);
+  });
+
+  function start(data){
+    const want = data && Number.isInteger(data.level) ? data.level : save.last;
+    startRound(Number.isInteger(want) && want >= 0 && want < LEVELS.length && unlocked(want) ? want : 0);
+  }
+  const hot = window.claude && window.claude.hot;
+  try { if (hot && hot.snapshot) hot.snapshot(() => ({ level: li })); } catch (e) {}
+  if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(() => {}); });
+</script>
+</body>
+</html>
