@@ -142,6 +142,7 @@ button{font:inherit}
 
 .foot{display:flex;flex-direction:column;gap:10px;color:var(--muted);font-size:13.5px;border-top:1px solid var(--line);padding-top:16px}
 .foot p{margin:0;max-width:72ch}
+.foot a{color:var(--ink);text-decoration-color:var(--brass);text-decoration-thickness:2px;text-underline-offset:3px}
 .foot .dy{font-family:var(--display);font-style:italic;font-weight:800;color:var(--ink);font-size:15px}
 .links{display:flex;gap:18px;flex-wrap:wrap}
 .link{padding:0;border:0;background:none;color:var(--ink);font-weight:600;font-size:13.5px;text-decoration:underline;text-decoration-color:var(--brass);text-decoration-thickness:2px;text-underline-offset:3px;cursor:pointer}
@@ -237,6 +238,7 @@ button{font:inherit}
     <p>Answer by playing the note on the piano, in the right octave. The dot marks middle C, and every answer is a white key.</p>
     <p>A round is 20 notes. Each is worth 100 points, plus up to 50 for speed, times your streak multiplier. The multiplier climbs through the dynamics: <span class="dy">p</span> ×1, <span class="dy">mp</span> ×2 at three in a row, <span class="dy">mf</span> ×3 at six, <span class="dy">f</span> ×4 at ten, <span class="dy">ff</span> ×5 at fifteen.</p>
     <p>16 of 20 earns one star and opens the next level. 18 earns two. Three stars takes 19 or more at under 3 seconds a note.</p>
+    <p>Piano: Salamander Grand Piano by Alexander Holm, <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>.</p>
     <div class="links">
       <button class="link" type="button" id="unlockAll">Unlock every level</button>
       <button class="link" type="button" id="reset">Reset progress</button>
@@ -294,7 +296,6 @@ button{font:inherit}
 
   const unlocked = i => i === 0 || save.unlockAll || (save.stars[LEVELS[i-1].id] || 0) >= 1;
   const letterOf = step => LETTERS[((step % 7) + 7) % 7];
-  const freqOf = step => 440 * Math.pow(2, (60 + 12 * Math.floor(step / 7) + SEMIS[((step % 7) + 7) % 7] - 69) / 12);
   const tier = s => s >= 15 ? ['ff',5] : s >= 10 ? ['f',4] : s >= 6 ? ['mf',3] : s >= 3 ? ['mp',2] : ['p',1];
   const stars = n => '★'.repeat(n) + '☆'.repeat(3 - n);
   const fmt = n => n.toLocaleString('en-US');
@@ -309,21 +310,50 @@ button{font:inherit}
   }
   const clefWord = item => LEVELS[li].clef === 'both' ? ` in ${item.clef} clef` : '';
 
-  /* ---------- sound ---------- */
+  /* ---------- sound: a sampled piano, with a plain tone until the samples have loaded ---------- */
+  const SAMPLE_NOTES = ['C2','Ds2','Fs2','A2','C3','Ds3','Fs3','A3','C4','Ds4','Fs4','A4','C5','Ds5','Fs5','A5','C6'];
+  const midiOfName = n => 12 * (+n.slice(-1) + 1) + { C:0, D:2, E:4, F:5, G:7, A:9, B:11 }[n[0]] + (n[1] === 's' ? 1 : 0);
+  const midiOfStep = step => 60 + 12 * Math.floor(step / 7) + SEMIS[((step % 7) + 7) % 7];
+  const samples = new Map();
   let ac = null;
-  function tone(freq, o = {}){
+  function audio(){
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === 'suspended') ac.resume();
+    return ac;
+  }
+  function loadSamples(){
+    let a; try { a = audio(); } catch (e) { return; }
+    SAMPLE_NOTES.forEach(n => fetch('./samples/' + n + '.mp3')
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(data => new Promise((res, rej) => a.decodeAudioData(data, res, rej)))
+      .then(buf => samples.set(midiOfName(n), buf))
+      .catch(() => {}));
+  }
+  function tone(midi, o, a){
+    const dur = o.dur || .6, t = a.currentTime + (o.delay || 0), osc = a.createOscillator(), g = a.createGain();
+    osc.type = 'triangle'; osc.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.linearRampToValueAtTime(.22 * (o.gain || 1), t + .015);
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    osc.connect(g); g.connect(a.destination); osc.start(t); osc.stop(t + dur + .05);
+  }
+  function play(midi, o = {}){
     if (!save.sound) return;
     try {
-      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
-      if (ac.state === 'suspended') ac.resume();
-      const dur = o.dur || .6, t = ac.currentTime + (o.delay || 0), osc = ac.createOscillator(), g = ac.createGain();
-      osc.type = o.type || 'triangle'; osc.frequency.value = freq;
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(o.gain || .22, t + .015);
-      g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-      osc.connect(g); g.connect(ac.destination); osc.start(t); osc.stop(t + dur + .05);
+      const a = audio();
+      let near = null, dist = 99;
+      for (const m of samples.keys()) { const d = Math.abs(m - midi); if (d < dist) { dist = d; near = m; } }
+      if (near === null) return tone(midi, o, a);
+      const dur = o.dur || 1.8, t = a.currentTime + (o.delay || 0), src = a.createBufferSource(), g = a.createGain();
+      src.buffer = samples.get(near); src.playbackRate.value = Math.pow(2, (midi - near) / 12);
+      g.gain.setValueAtTime(o.gain || 1, t);
+      g.gain.setValueAtTime(o.gain || 1, t + dur * .55);
+      g.gain.exponentialRampToValueAtTime(.001, t + dur);
+      src.connect(g); g.connect(a.destination); src.start(t); src.stop(t + dur + .05);
     } catch (e) {}
   }
+  loadSamples();
+  window.clefClimb = { samplesLoaded: () => samples.size };
 
   /* ---------- drawing ---------- */
   function drawNote(item, mark, animate){
@@ -436,15 +466,15 @@ button{font:inherit}
       round.score += pts;
       it.w = Math.max(0.5, it.w - 0.3);
       setFb(`${right}. +${fmt(pts)}`, 'good');
-      tone(freqOf(it.step));
+      play(midiOfStep(it.step));
     } else {
       round.streak = 0; it.w += 2;
       const key = it.clef + it.step, m = round.missed.get(key) || { it, n:0 };
       m.n++; round.missed.set(key, m);
       setFb(letterOf(step) === right ? `Right letter, wrong octave. This ${right}${clefWord(it)} is ${where(it)}.`
                                      : `That was ${right}${clefWord(it)}, ${where(it)}.`, 'bad');
-      tone(freqOf(step), { dur:.3, gain:.14 });
-      tone(freqOf(it.step), { delay:.34 });
+      play(midiOfStep(step), { dur:.6, gain:.6 });
+      play(midiOfStep(it.step), { delay:.5 });
     }
     drawNote(it, ok ? 'good' : 'bad', false);
     round.n++;
@@ -499,7 +529,7 @@ button{font:inherit}
     renderRail();
     const primary = el.results.querySelector('.btn');
     if (primary) primary.focus({ preventScroll: true });
-    if (n >= 1) [0, .12, .24].slice(0, n).forEach((d, k) => tone([523.25, 659.25, 783.99][k], { delay: d, dur: .5, gain: .16 }));
+    if (n >= 1) [0, .14, .28].slice(0, n).forEach((d, k) => play([72, 76, 79][k], { delay: d, dur: 1.6, gain: .8 }));
   }
 
   /* ---------- wiring ---------- */
@@ -515,7 +545,7 @@ button{font:inherit}
   });
   el.namesT.addEventListener('click', () => { save.keyNames = !save.keyNames; persist(); renderToggles(); });
   el.hintT.addEventListener('click', () => { save.hints = !save.hints; persist(); renderToggles(); });
-  el.soundT.addEventListener('click', () => { save.sound = !save.sound; persist(); renderToggles(); if (save.sound) tone(523.25, { dur:.25 }); });
+  el.soundT.addEventListener('click', () => { save.sound = !save.sound; persist(); renderToggles(); if (save.sound) play(72, { dur:.9 }); });
   el.unlockAll.addEventListener('click', () => { save.unlockAll = true; persist(); renderRail(); });
   let armed = 0;
   el.reset.addEventListener('click', () => {

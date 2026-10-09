@@ -1,6 +1,6 @@
 // Clef Climb offline cache. The page is fetched from the network when there is one, so updates arrive on the next launch; everything is served from the cache when there is not.
-const VERSION = 'clef-climb-d8b454bbcb';
-const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-512-maskable.png", "./fonts/bodoni-moda-latin-600-normal.woff2", "./fonts/bodoni-moda-latin-600-italic.woff2", "./fonts/bodoni-moda-latin-800-italic.woff2", "./fonts/instrument-sans-latin-400-normal.woff2", "./fonts/instrument-sans-latin-500-normal.woff2", "./fonts/instrument-sans-latin-600-normal.woff2", "./fonts/instrument-sans-latin-700-normal.woff2"];
+const VERSION = 'clef-climb-34811d0922';
+const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-512-maskable.png", "./fonts/bodoni-moda-latin-600-normal.woff2", "./fonts/bodoni-moda-latin-600-italic.woff2", "./fonts/bodoni-moda-latin-800-italic.woff2", "./fonts/instrument-sans-latin-400-normal.woff2", "./fonts/instrument-sans-latin-500-normal.woff2", "./fonts/instrument-sans-latin-600-normal.woff2", "./fonts/instrument-sans-latin-700-normal.woff2", "./samples/C2.mp3", "./samples/Ds2.mp3", "./samples/Fs2.mp3", "./samples/A2.mp3", "./samples/C3.mp3", "./samples/Ds3.mp3", "./samples/Fs3.mp3", "./samples/A3.mp3", "./samples/C4.mp3", "./samples/Ds4.mp3", "./samples/Fs4.mp3", "./samples/A4.mp3", "./samples/C5.mp3", "./samples/Ds5.mp3", "./samples/Fs5.mp3", "./samples/A5.mp3", "./samples/C6.mp3"];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
