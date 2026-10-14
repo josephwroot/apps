@@ -6,7 +6,7 @@ Each entry is one paper or a series, written into the same slots every time: que
 
 ## Adding entries
 
-All content is in `papers.md`. The format is described in the comment at the top of that file: `# Topic` starts a topic (the lines after it are the topic's story), `## Title` starts an entry, and a line beginning `Papers:`, `Question:`, `Setting:`, `Result:`, `Work:`, `Proof:`, `Matters:`, `Connections:` or `Notes:` starts a slot. Math is LaTeX between `$` or `$$`, rendered by KaTeX. Entries appear in file order, and `[[Entry title]]` links to another entry.
+All content is in `papers.md`. The format is described in the comment at the top of that file: `# Topic` starts a topic (the lines after it are the topic's story), `## Title` starts an entry, and a line beginning `Papers:`, `Question:`, `Setting:`, `Result:`, `Work:`, `Proof:`, `Matters:`, `Connections:` or `Notes:` starts a slot (`Years:` sets the year shown in the topic list). Math is LaTeX between `$` or `$$`, rendered by KaTeX. Entries appear in file order, and `[[Entry title]]` links to another entry.
 
 Edit the file on GitHub (or ask Claude to add an entry); the app fetches it fresh on each launch.
 

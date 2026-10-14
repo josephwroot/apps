@@ -14,7 +14,8 @@
     'proof': 'proof', 'proof idea': 'proof',
     'matters': 'matters', 'why it matters': 'matters',
     'connections': 'connections', 'related': 'connections',
-    'notes': 'notes', 'note': 'notes'
+    'notes': 'notes', 'note': 'notes',
+    'years': 'years', 'year': 'years'
   };
   const FIELD_ORDER = ['papers', 'question', 'setting', 'result', 'work', 'proof', 'matters', 'connections', 'notes'];
   const FIELD_LABELS = {
@@ -36,7 +37,7 @@
   // The year of the first paper listed, which is the entry's main reference.
   function yearsOf(text) {
     const first = text.split('\n').find(l => l.trim()) || '';
-    const m = /\b(1[89]\d\d|20\d\d)\b/.exec(first);
+    const m = /\b(1[6-9]\d\d|20\d\d)\b/.exec(first);
     return m ? m[1] : '';
   }
 
@@ -69,7 +70,8 @@
       t.blurb = t.blurb.join('\n').trim();
       for (const e of t.entries) {
         for (const k of Object.keys(e.fields)) e.fields[k] = e.fields[k].join('\n').trim();
-        e.years = yearsOf(e.fields.papers || '');
+        e.years = (e.fields.years || '').trim() || yearsOf(e.fields.papers || '');
+        delete e.fields.years;
         e.search = (e.title + ' ' + (e.fields.papers || '')).toLowerCase();
       }
     }
